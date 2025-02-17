@@ -1,0 +1,176 @@
+;license:MIT
+;(c) 2025 by 4am
+;
+!cpu 6502
+!ct "src/lcase.ct"
+!to "build/IMPROB.SYSTEM#FF2000",plain
+*=$2000
+
+         jmp   Start
+
+         !src "src/constants.a"
+         !src "src/macros.a"
+
+needs_reloc=0
+read_only=0
+disks=2
+filename +PSTRING "SIDE.A"           ; if disks>1, last character will be incremented for each disk
+filename_e
+
+onResetMove
+!pseudopc OnReset {
+         sta   RWAUXZPSTACK          ; runs from $0110/main
+                                     ; the rest of this routine runs from aux
+                                     ; (it's copied to main and aux stacks)
+         sei
+         cld
+         sta   READAUXMEM
+         sta   WRITEMAINMEM
+         jsr   CopyProgramAndProDOS
+         sta   READMAINMEM
+         jmp   ReenterCold
+CopyProgramAndProDOS
+; this routine is relocated to auxmem and called (by OnReset)
+; but also called from its original location in mainmem (by BackupMemory)
+         ldy   #0
+-        lda   $BF00, y
+         sta   $BF00, y
+         lda   $2000, y
+         sta   $2000, y
+         iny
+         bne   -
+         rts
+}
+onResetMoveLength=*-onResetMove
+
+;------------------------------------------------------------------------------
+; CopyLC10/CopyLC30
+; Copies language card banks from main LC to aux LC
+;   (or, after modification, from aux LC to main LC)
+;
+; Routine runs from somewhere in $0200-$BFFF/main, so we can switch
+; RWMAINZPSTACK/RWAUXZPSTACK freely. Despite the name, this is the softswitch
+; that switches between main LC and aux LC.
+;
+; out:   X = 0
+;        Y = 0
+;        Z = 1
+;        all other registers and flags clobbered
+;        RWMAINZPSTACK
+;------------------------------------------------------------------------------
+CopyLC10
+         ldx   #$10
+         stx   $03F2
+         +HIDE_NEXT_2_BYTES
+CopyLC30
+         ldx   #$30
+         ldy   #$00
+         lda   #$D0
+         sta   copyLCSrcPage
+         sta   copyLCDstPage
+-
+copyLCSrcBank=*+1
+         sta   RWMAINZPSTACK         ; [SMC by caller, might be RWALTZPSTACK]
+copyLCSrcPage=*+2
+         lda   $FD00, y              ; [SMC high byte]
+copyLCDstBank=*+1
+         sta   RWAUXZPSTACK          ; [SMC by caller, might be RWMAINZPSTACK]
+copyLCDstPage=*+2
+         sta   $FD00, y              ; [SMC high byte]
+         iny
+         bne   -
+         inc   copyLCSrcPage
+         inc   copyLCDstPage
+         dex
+         bne   -
+         sta   RWMAINZPSTACK         ; always
+         rts
+
+;------------------------------------------------------------------------------
+; ReenterCold
+; Restore ProDOS and quit-to-ProDOS gracefully after user presses Ctrl-Reset
+;
+; in:    READMAINMEM / WRITEMAINMEM
+;        RWAUXZPSTACK
+; out:   does not return, exits via ProDOS MLI Quit
+;------------------------------------------------------------------------------
+ReenterCold
+         sta   RWMAINZPSTACK         ; switch back to main stack before any JSR
+
+         +READ_RAM2_WRITE_RAM2
+         jsr   CopyLC30
+backupf800=*+1
+         lda   #SELF_MODIFIED_BYTE
+         sta   $F800                 ; clobbered by Pascal runtime
+backupfc00=*+1
+         lda   #SELF_MODIFIED_BYTE
+         sta   $FC00                 ; clobbered by Pascal runtime
+         +READ_RAM1_WRITE_RAM1
+         jsr   CopyLC10
+         cli
+Quit
+         jsr   PRODOS_MLI
+         !byte CMD_QUIT
+         !word byte_4
+
+!if (* > $20FF) { !serious "ReenterCold routine is too large" }
+
+;------------------------------------------------------------------------------
+; BackupMemory
+; Copies both language card banks and selected contents of
+;   main memory to auxiliary memory.
+; Copies code to $0110/main to jump to $0113/aux.
+; Copies code to $0113/aux to jump to RestoreCold.
+; Sets reset vector to $0110.
+;
+; in:    READMAINMEM / WRITEMAINMEM
+; out:   all registers and flags clobbered
+;        Read ROM / No Write
+;        READMAINMEM / WRITEMAINMEM
+;------------------------------------------------------------------------------
+BackupMemory
+         +READ_RAM2_WRITE_RAM2
+         lda   $F800                 ; clobbered by Pascal runtime in aux-LC later
+         sta   backupf800
+         lda   $FC00                 ; clobbered by Pascal runtime in aux-LC later
+         sta   backupfc00
+         jsr   CopyLC30              ; copy $D000..$FFFF/main-LC2 to $D000/aux-LC2
+         +READ_RAM1_WRITE_RAM1_1
+         jsr   CopyLC10              ; copy $D000..$DFFF/main-LC1 to $D000/aux-LC1
+         +READ_ROM_NO_WRITE
+
+         inc   copyLCSrcBank         ; modify CopyLC routine so RestoreCold
+         dec   copyLCDstBank         ; will copy from aux LC to main LC
+
+         sta   WRITEAUXMEM           ; copy ReenterCold and ProDOS global page BF to auxmem
+         jsr   CopyProgramAndProDOS+onResetMove-OnReset
+         sta   WRITEMAINMEM
+
+         ldy   #onResetMoveLength
+-        lda   onResetMove-1, y
+         sta   RWAUXZPSTACK          ; copy bootstrap routines into aux and main stacks
+         sta   OnReset-1, y
+         sta   RWMAINZPSTACK
+         sta   OnReset-1, y
+         dey
+         bne   -
+         iny
+         sty   $03F3                 ; set reset vector to bootstrap routine in main stack
+         jmp   ROM_FINALIZE_RESET
+
+Start
+         inc   $03F4                 ; reboot on reset unless we set up a better reset later
+         lda   PRODOS_MACHID         ; requires 64K, supports 128K
+         and   #%00110000
+         cmp   #%00110000            ; 128K?
+byte_4=*+1
+!if (* > $20FF) { !serious "code is too large for byte_4 hack" }
+         bne   no128k
+         jsr   BackupMemory          ; copy ProDOS and some application code to auxmem for later
+         !byte $AD
+no128k
+!if (*-byte_4-1 <> 4) { !serious "byte_4 is not 4" }
+         and   #%00100000            ; 64K?
+         beq   Quit                  ; can't continue without at least 64K
+
+         !src "src/bootstar/boot.pascal.a"
