@@ -39,8 +39,12 @@
                 ora     pas_hdddirbuf, y
                 cmp     #1
                 pla
+!if read_only=0 {
                 ldy     reqcmd
                 bcs     .hddseekrdwr
+} else {
+                bcs     .hddseekrd
+}
 .savebyte
                 tay
 
@@ -114,8 +118,12 @@
   }
 
 .hddcodeend
+!if disks>1 {
 .blokloarray
-.blokhiarray = .blokloarray + 2
-.zp_array        = .blokhiarray + 2
+.blokhiarray = .blokloarray + disks
+.zp_array        = .blokhiarray + disks
+} else {
+.zp_array
+}
 zp_array        = .zp_array
 .hdddataend      = .zp_array + 1 + last_zp - first_zp

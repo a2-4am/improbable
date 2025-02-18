@@ -61,8 +61,10 @@
 } else {
                 iny
 }
+!if disks>1 {
                 sty     .patch_lda_blokloarray + 2
                 sty     .patch_lda_blokhiarray + 2
+}
                 sty     .patch_ldy_zp_array + 2
                 sty     .patch_sta_zp_array + 2
 !if read_only=0 {
@@ -112,10 +114,12 @@
                 sta     .patch_jsr_hddwriteenc1 + 1
                 sta     .patch_jsr_hddwriteenc2 + 1
 }
+!if disks>1 {
                 lda     #<($D0EA + $25 + .blokloarray - .patch_jsr_swap_zpg)
                 sta     .patch_lda_blokloarray + 1
                 lda     #<($D0EA + $25 + .blokhiarray - .patch_jsr_swap_zpg)
                 sta     .patch_lda_blokhiarray + 1
+}
                 lda     #<($D0EA + $25 + .zp_array - .patch_jsr_swap_zpg)
                 sta     .patch_ldy_zp_array + 1
                 sta     .patch_sta_zp_array + 1
@@ -236,12 +240,11 @@
                 dey
                 bpl     -
 }
-                ldy     #3
-.patch_jsr       lda     .unhook-1, y
-.patch_sta       sta     $680f-1, y ;varies by version
-                dey
+.patch_jsr       lda     .unhook-1, x
+.patch_sta       sta     $680f-1, x ;varies by version
+                dex
                 bne     .patch_jsr
-                sty     $BD
+                stx     $BD
                 ldx     #7
                 stx     $BE
 .nextpage        ldy     #0
@@ -310,6 +313,7 @@
                 lda     $3A9
                 sta     $CF
 
+!if disks>1 {
 .curvolidx
                 ldx     #0 ;SMC
 .patch_lda_blokloarray
@@ -318,6 +322,7 @@
 .patch_lda_blokhiarray
                 lda     .blokhiarray, x
                 sta     treeblkhi
+}
 
 .loopsect
                 lda     #0

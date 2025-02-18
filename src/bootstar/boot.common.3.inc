@@ -57,17 +57,26 @@
 
                 ;fetch KEY_POINTER
 
+!if disks=1 {
                 ldx     .vol_idx
                 inc     .vol_idx
+}
                 ldy     #KEY_POINTER
                 lda     (scratchlo), y
+!if disks=1 {
+                sta     .zp_array + treeblklo - first_zp
+} else {
                 sta     .blokloarray, x
+}
                 iny
                 lda     (scratchlo), y
+!if disks=1 {
+                sta     .zp_array + treeblkhi - first_zp
+} else {
                 sta     .blokhiarray, x
+}
                 ldy     #>pas_hddtreebuf
-                jsr     .hddreaddirsect
-                rts
+                jmp     .hddreaddirsect
 
 .vol_idx         !byte   0
 
