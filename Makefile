@@ -9,9 +9,10 @@ version=0
 is_64kb=1
 
 # boolean, 0 or 1 (normally 0, use 1 for 128K Pascal e.g. Widespread)
+# use 0 for disks that boot 64K Pascal then manually use auxmem e.g. Jostens Learning
 is_128kb=0
 
-# boolean, 0 or 1 (normally 0, use 1 if you need write support)
+# boolean, 0 or 1 (normally 1, use 0 if you need write support)
 read_only=1
 
 # integer, 1+ (number of disks)
