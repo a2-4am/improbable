@@ -4,6 +4,15 @@
 ; common assembler macros (6502 compatible)
 ;
 
+!macro REQUIRE_BOOL .var, .name {
+!ifndef .var {
+         !serious .name," is not defined"
+}
+!if .var<>0 and .var<>1 {
+         !serious .name," must be 0 or 1"
+}
+}
+
 !macro   PSTRING .string {
          !byte +-*-1
          !raw  .string

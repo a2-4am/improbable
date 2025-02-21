@@ -6,19 +6,35 @@
 !to "build/IMPROB.SYSTEM#FF2000",plain
 *=$2000
 
-         jmp   Start
-
          !src "src/constants.a"
          !src "src/macros.a"
 
-version=3 ;1, 2, or 3
-is_64kb=1
-is_128kb=0
-read_only=1
-disks=1
-is_apa=0                             ; Apple Presents Apple is a v1.1 64kb variant with reversed LC bank accesses
-is_uukrul=0                          ; The Dark Heart of Uukrul is a v1.1 64kb variant that bypasses the startup file
-is_sundog=0 ;;--support next update-- ;;                          ; SunDog is a v1.2 64kb variant that has custom startup code
+!ifndef version {
+         !serious "version is not defined"
+}
+!if version<>1 and version<>2 and version<>3 {
+         !serious "version must be 1, 2, or 3"
+}
+!ifndef disks {
+         !serious "disks is not defined"
+}
+!if disks<1 {
+         !serious "disks must be greater than 0"
+}
+
+         +REQUIRE_BOOL is_64kb,      "is_64kb"
+         +REQUIRE_BOOL is_128kb,     "is_128kb"
+         +REQUIRE_BOOL read_only,    "read_only"
+         ; Apple Presents Apple is a v1.1 64kb variant with reversed LC bank accesses
+         +REQUIRE_BOOL is_apa,       "is_apa"
+         ; The Dark Heart of Uukrul is a v1.1 64kb variant that bypasses the startup file
+         +REQUIRE_BOOL is_uukrul,    "is_uukrul"
+         ;;--support next update--
+         ; SunDog is a v1.2 64kb variant that has custom startup code
+         +REQUIRE_BOOL is_sundog,    "is_sundog"
+
+         jmp   Start
+
 filename +PSTRING "SIDE.A"           ; if disks>1, last character will be incremented for each disk
 filename_e
 
