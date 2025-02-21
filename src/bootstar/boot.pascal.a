@@ -78,7 +78,7 @@
 } else {
   !if version=2 {
     !if is_64kb=0 {
-      if is_128kb=0 {
+      !if is_128kb=0 {
         !src "src/bootstar/boot.pascal.12_48kb.a"
       } else {
         !src "src/bootstar/boot.pascal.12_128kb.a"
