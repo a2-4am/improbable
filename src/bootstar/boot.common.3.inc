@@ -57,7 +57,7 @@
 
                 ;fetch KEY_POINTER
 
-!if disks=1 {
+!if disks>1 {
                 ldx     .vol_idx
                 inc     .vol_idx
 }
@@ -78,7 +78,9 @@
                 ldy     #>pas_hddtreebuf
                 jmp     .hddreaddirsect
 
+!if disks>1 {
 .vol_idx         !byte   0
+}
 
 .c7_parms        !byte   1
                 !word   $8000

@@ -2,557 +2,105 @@
 ;extended open/read/write binary file in ProDOS filesystem, with random access
 ;copyright (c) Peter Ferrie 2013-2020, 2025
 
-!src "src/bootstar/boot.common.2.inc"
+!ct "src/rcase.ct"
 
-                ;user-defined driver load address
-!if needs_reloc=1 {
-                .reloc     = $1400       ;page-aligned, but otherwise wherever you want ($BC00 is common for rwts_mode)
-}
-                ldx     #0
-                stx     $3A8 ;adrlo
-                inx
-                stx     $3AC ;read
-
-                lda     ROMIN
-                lda     ROMIN
-
-                ldx     #6
-                lda     #0
-                jsr     .loadpascal
-                lda     $CD
-                sta     $BD
-                lda     #$E0
-                sta     .endadr + 1
-                lda     LCBANK2
-                jsr     .startadr
-                lda     LCBANK1
-
-.reloc_code      lda     #<($D0EA + $25 + .swap_zpg - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_swap_zpg + 1
-                ldy     #>($D0EA + $25 + .swap_zpg - .patch_jsr_swap_zpg)
-                sty     .patch_jsr_swap_zpg + 2
-!if disks>1 {
-                lda     #<($D0EA + $25 + .curvolidx + 1 - .patch_jsr_swap_zpg)
-                sta     .patch_sta_curvolidx + 1
-                sty     .patch_sta_curvolidx + 2
-}
-                lda     #<($D0EA + $25 + .secttbl - .patch_jsr_swap_zpg)
-                sta     .patch_ora_secttbl + 1
-                lda     #<($D0EA + $25 + .seek1 - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_seek1 + 1
-!if read_only=0 {
-                lda     #<($D0EA + $25 + .loopsect - .patch_jsr_swap_zpg)
-                sta     .patch_jmp_loopsect1 + 1
-                sty     .patch_jmp_loopsect1 + 2
-                sta     .patch_jmp_loopsect2 + 1
-                sty     .patch_jmp_loopsect2 + 2
-                iny
-}
-                sty     .patch_ora_secttbl + 2
-                sty     .patch_jsr_seek1 + 2
-!if read_only=0 {
-                sty     .patch_jsr_hddwriteenc1 + 2
-                sty     .patch_jsr_hddwriteenc2 + 2
-                sty     .patch_sta_hddskiptree1_2 + 2
-                sty     .patch_jsr_hddrdfile + 2
-                sty     .patch_sta_hddskiptree2_2 + 2
-                sty     .patch_jsr_hddwritedir + 2
-                sty     .patch_jsr_savebyte + 2
-} else {
-                iny
-}
-!if disks>1 {
-                sty     .patch_lda_blokloarray + 2
-                sty     .patch_lda_blokhiarray + 2
-}
-                sty     .patch_ldy_zp_array + 2
-                sty     .patch_sta_zp_array + 2
-!if read_only=0 {
-                sty     .patch_jsr_hddseekrdwr + 2
-                sty     .patch_jmp_hddwriteimm + 2
-}
-                sty     .reloc + (.unrppacket - .unrelochdd) + 1
-                sty     .patch_sta_paddr + 2
-                lda     .unrcommand3
-                cmp     #$8c ;STY
-                bne     +
-                lda     #<($D0EA + $25 + .pcommand - .patch_jsr_swap_zpg)
-!if read_only=0 {
-                sta     .reloc + (.unrcommand1 - .unrelochdd) + 1
-}
-                sta     .reloc + (.unrcommand3 - .unrelochdd) + 1
-!if read_only=0 {
-                sty     .reloc + (.unrbloklo2 - .unrelochdd) + 2
-                sty     .reloc + (.unrblokhi2 - .unrelochdd) + 2
-                sty     .reloc + (.unrblokhi3 - .unrelochdd) + 2
-}
-                sty     .reloc + (.unrcommand3 - .unrelochdd) + 2
-!if read_only=0 {
-                sty     .reloc + (.unrcommand1 - .unrelochdd) + 2
-}
-                sty     .reloc + (.unrbloklo1 - .unrelochdd) + 2
-                sty     .reloc + (.unrblokhi1 - .unrelochdd) + 2
-                sty     .reloc + (.unrunit1 - .unrelochdd) + 4
-                ldy     #<($D0EA + $25 + .pblock - .patch_jsr_swap_zpg)
-!if read_only=0 {
-                sty     .reloc + (.unrbloklo2 - .unrelochdd) + 1
-}
-                sty     .reloc + (.unrbloklo1 - .unrelochdd) + 1
-!if read_only=0 {
-                sty     .reloc + (.unrblokhi2 - .unrelochdd) + 1
-                sty     .reloc + (.unrblokhi3 - .unrelochdd) + 1
-}
-                iny
-                sty     .reloc + (.unrblokhi1 - .unrelochdd) + 1
-                ldy     #<($D0EA + $25 + .paddr + 1 - .patch_jsr_swap_zpg) - 1
-                sty     .reloc + (.unrunit1 - .unrelochdd) + 3
-+
-!if read_only=0 {
-                lda     #<($D0EA + $25 + .hddwriteimm - .patch_jsr_swap_zpg)
-                sta     .patch_jmp_hddwriteimm + 1
-                lda     #<($D0EA + $25 + .hddwriteenc - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_hddwriteenc1 + 1
-                sta     .patch_jsr_hddwriteenc2 + 1
-}
-!if disks>1 {
-                lda     #<($D0EA + $25 + .blokloarray - .patch_jsr_swap_zpg)
-                sta     .patch_lda_blokloarray + 1
-                lda     #<($D0EA + $25 + .blokhiarray - .patch_jsr_swap_zpg)
-                sta     .patch_lda_blokhiarray + 1
-}
-                lda     #<($D0EA + $25 + .zp_array - .patch_jsr_swap_zpg)
-                sta     .patch_ldy_zp_array + 1
-                sta     .patch_sta_zp_array + 1
-                lda     #<($D0EA + $25 + .hddreaddirsel - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_hddreaddirsel + 1
-                ldy     #>($D0EA + $25 + .hddreaddirsel - .patch_jsr_swap_zpg)
-                sty     .patch_jsr_hddreaddirsel + 2
-!if read_only=0 {
-                lda     #<($D0EA + $25 + .hddreaddirsec - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_hddreaddirsec + 1
-}
-                ;;ldy     #>($D0EA + $25 + .hddreaddirsec - .patch_jsr_swap_zpg)
-!if read_only=0 {
-                sty     .patch_jsr_hddreaddirsec + 2
-                iny     
-} else {
-                ldy     #>((($D0EA + $25 + .hdddataend - .patch_jsr_swap_zpg) + $ff) & -256)
-}
-                sty     .patch_lda_hddencbuf1 + 1
-!if read_only=0 {
-                sty     .patch_lda_hddencbuf_29 + 2
-                sty     .patch_lda_hddencbuf_2a + 2
-                sty     .patch_ldx_hddencbuf_27 + 2
-                sty     .patch_lda_hddencbuf_28 + 2
-                sty     .patch_ldy_hddencbuf + 1
-                sty     .patch_sta_hdddirbuf1 + 2
-                sty     .patch_lda_hddencbuf2 + 1
-}
-                sty     .patch_ldx_hdddirbuf1 + 2
-                sty     .patch_ldx_hdddirbuf2 + 2
-                sty     .patch_ora_hdddirbuf + 2
-                sty     .patch_ldy_hdddirbuf + 1
-                iny
-!if read_only=0 {
-                sty     .patch_sta_hdddirbuf2 + 2
-}
-                sty     .patch_lda_hdddirbuf1 + 2
-                sty     .patch_lda_hdddirbuf2 + 2
-!if read_only=0 {
-                lda     #<($D0EA + $25 + .hddskiptree + 2 - .patch_jsr_swap_zpg)
-                sta     .patch_sta_hddskiptree1_2 + 1
-                sta     .patch_sta_hddskiptree2_2 + 1
-                lda     #<($D0EA + $25 + .hddrdfile - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_hddrdfile + 1
-                lda     #<($D0EA + $25 + .hddwritedir - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_hddwritedir + 1
-                lda     #<($D0EA + $25 + .savebyte - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_savebyte + 1
-                lda     #<($D0EA + $25 + .hddseekrdwr - .patch_jsr_swap_zpg)
-                sta     .patch_jsr_hddseekrdwr + 1
-}
-                lda     #<($D0EA + $25 + .hddseekrd - .patch_jsr_swap_zpg)
-!if read_only=0 {
-                sta     .patch_jsr_hddseekrd1 + 1
-}
-                sta     .patch_jsr_hddseekrd2 + 1
-                lda     #<($D0EA + $25 + .paddr + 1 - .patch_jsr_swap_zpg)
-                sta     .patch_sta_paddr + 1
-                lda     #<($D0EA + $25 + .packet - .patch_jsr_swap_zpg)
-                sta     .reloc + (.unrppacket - .unrelochdd)
-!if read_only=0 {
-                iny
-                sty     .patch_cmp_hddencbuf_2 + 1
-}
-                lda     #>($D0EA + $25 + .hddseekrd - .patch_jsr_swap_zpg)
-!if read_only=0 {
-                sta     .patch_jsr_hddseekrd1 + 2
-}
-                sta     .patch_jsr_hddseekrd2 + 2
-
-                ldy     #0
--               lda     .reloc, y
-                sta     $d10f, y
-                lda     .reloc + $100, y
-                sta     $d20f, y
-                iny
-                bne     -
-
-.patch_slot     lda     #$60
-                sta     $d681
-                sta     $d682
-
-.banklc1         lda     $C08B ;varies by version
-                lda     #$20 ;jsr
-                sta     $f29f
-                lda     #<.callback
-                sta     $f2a0
-                lda     #>.callback
-                sta     $f2a1
-                ldx     #$ff
-                txs
-
-.jmpindirect     jmp     ($fff8) ;varies by version
-
-.magic_b
-!if disks>1 {
-                iny
-                lda      ($58), y      ;get volume number
-                bit      $c083
-.patch_sta_curvolidx
-                sta      $d1d1
-                bit      $c08b
-                jmp      $d27B
-}
-.magic_e
-
-.callback        lda     #$f2
-                sta     $BD
-                ldy     #$1e + 3 ;3 = preserve size
-                txa
-                beq     .skippage
-                cpx     #3
-                bne     .nextpage
-!if (.magic_e-.magic_b)>0 {
-                ldy     #(.magic_e-.magic_b) - 1
--               lda     .magic_b, y
-                sta     $100, y
-                dey
-                bpl     -
-}
-.patch_jsr       lda     .unhook-1, x
-.patch_sta       sta     $680f-1, x ;varies by version
-                dex
-                bne     .patch_jsr
-                stx     $BD
-                ldx     #7
-                stx     $BE
-.nextpage        ldy     #0
-                tya
-.unhook          inc     $BE
-.skippage        inx
-                rts
-
-.loadpascal      lsr
-                txa
-                ror
-                lsr
-                lsr
-                sta     $3A4
-                txa
-                and     #7
-                asl
-                sta     $BD
-.startadr        lda     #$d0
-                sta     $3A9
-                eor     #$ff
-                sec
-                adc     .endadr + 1
-                cmp     #$10
-                bcc     +
-                lda     #$10
-                sec
-                sbc     $BD
-+
--               sta     $C3
-                jsr     .reloc
-                lda     #0
-                sta     $BD
-                lda     $CF
-                sta     $3A9
-                sec
-.endadr          lda     #0
-                sbc     $3A9
-                beq     +
-                inc     $3A4
-                cmp     #$10
-                bcc     -
-                lda     #$10
-                bne     -
-+               rts
-
-.c5_parms
-                !byte   2
-                !byte   0
-                !word   $281
-                !byte   $d1
-
-!src "src/bootstar/boot.common.3.inc"
-
-.unrelochdd
-!if needs_reloc=0 {
-                .reloc     = .unrelochdd ;no need to move
-}
-!pseudopc .reloc {
-.patch_jsr_swap_zpg
-                jsr     .swap_zpg
-                lda     $BD
-                sta     $CD
-                lda     $3A8
-                sta     $CE
-                lda     $3A9
-                sta     $CF
-
-!if disks>1 {
-.curvolidx
-                ldx     #0 ;SMC
-.patch_lda_blokloarray
-                lda     .blokloarray, x
-                sta     treeblklo
-.patch_lda_blokhiarray
-                lda     .blokhiarray, x
-                sta     treeblkhi
+!if is_64kb=1 and is_128kb=1 {
+  !error "set only one of is_64kb or is_128kb"
 }
 
-.loopsect
-                lda     #0
-                sta     sizehi
-                lda     $CD
-                and     #$0f
-                tay
-                lda     $3A4
-                asl
-                asl
-                asl
-                rol     sizehi
-                asl
-                rol     sizehi
-.patch_ora_secttbl
-                ora     .secttbl, y
-                tax
-                lda     sizehi
-                lsr
-                sta     treeidx
-                txa
-                ror
-                php
-.patch_jsr_seek1
-                jsr     .seek1
-                plp
-                ldy     #0
-                tya
-.patch_lda_hddencbuf1
-                adc     #>pas_hddencbuf
-                sta     adrhi
-!if read_only=0 {
-                lda     $3AC
-                lsr
-                bne     .runinit
-}
-                lda     $BE
-                beq     .copysect
-                ldx     $C3
-                dex
-                bne     .copysect
-                ldx     $CD
-                inx
-                txa
-                sec
-                sbc     $BD
-                cmp     $BF
-                bne     .copysect
-                lda     $CF
-                sta     $C5
-                sty     $CE
-                lda     #2
-                sta     $CF
-
-.copysect        lda     (adrlo),y
-                sta     ($CE),y
-                iny
-                bne     .copysect
-
-.nextsect        inc     $CD
-                inc     $CF
-                dec     $C3
-!if read_only=0 {
-                beq     .swap_zpg
-.patch_jmp_loopsect1
-                jmp     .loopsect
-
-.runinit
-                lda     sparseblk
-                bne     .writesparse
--               lda     ($CE),y
-                sta     (adrlo),y
-                iny
-                bne     -
-.patch_jsr_hddwriteenc1
-                jsr     .hddwriteenc
-                bne     .nextsect
-} else {
-                bne     .loopsect
+!if (is_apa=1 and (is_uukrul=1 or is_sundog=1)) or (is_uukrul=1 and is_sundog=1) {
+  !error "set at most one of is_apa and is_uukrul and is_sundog"
 }
 
-.swap_zpg
-                clc
-
-.swap_zpgi       ldx     #(last_zp - first_zp)
--               lda     first_zp,x
-.patch_ldy_zp_array
-                ldy     .zp_array,x
-.patch_sta_zp_array
-                sta     .zp_array,x
-                sty     first_zp,x
-                dex
-                bpl     -
-                rts
-
-!if read_only=0 {
-.writesparse     ldx     #2
-                tya
-.patch_jsr_hddreaddirsec
-                jsr     .hddreaddirsec
-                lda     #0
-                sta     namlo
-                sta     namhi
-
-                ;round up to block count
-
-.patch_lda_hddencbuf_29
-                lda     pas_hddencbuf + $29
-                adc     #$ff
-.patch_lda_hddencbuf_2a
-
-                lda     pas_hddencbuf + $2A
-                adc     #1
-                lsr
-                sta     ldrhi
-.patch_ldx_hddencbuf_27
-                ldx     pas_hddencbuf + $27
-.patch_lda_hddencbuf_28
-                lda     pas_hddencbuf + $28
-.patch_ldy_hddencbuf
----             ldy     #>pas_hddencbuf
-                sty     adrhi
-.patch_jsr_hddseekrd1
-                jsr     .hddseekrd
-                ldy     #0
-
-                ;scan for a free block
-
---              lda     #$80
-                sta     ldrlo
--               lda     (adrlo), y
-                and     ldrlo
-                bne     .foundbit
-                lsr     ldrlo
-                inc     namlo
-                bcc     -
-                bne     +
-                inc     namhi
-+               iny
-                bne     --
-                inc     adrhi
-                lda     adrhi
-.patch_cmp_hddencbuf_2
-                cmp     #(>pas_hddencbuf) + 2
-                bne     --
-.unrbloklo2 = .unrelochdd + (* - .patch_jsr_swap_zpg)
-                ldx     bloklo
-                nop ;allow replacing "ldx bloklo" with "ldx pblock" in extended SmartPort mode
-                inx
-                bne     +
-.unrblokhi2 = .unrelochdd + (* - .patch_jsr_swap_zpg)
-                inc     blokhi
-                nop ;allow replacing "inc blokhi" with "inc pblock + 1" in extended SmartPort mode
-+
-.unrblokhi3 = .unrelochdd + (* - .patch_jsr_swap_zpg)
-                lda     blokhi
-                nop ;allow replacing "lda blokhi" with "lda pblock + 1" in extended SmartPort mode
-                dec     ldrhi
-                bne     ---
-
-                ;disk full
-
-                beq     .swap_zpg
-
-                ;allocate block and update bitmap
-
-.foundbit        lda     (adrlo), y
-                eor     ldrlo
-                sta     (adrlo), y
-.patch_jsr_hddwriteenc2
-                jsr     .hddwriteenc
-                lda     #$60 ;RTS
-.patch_sta_hddskiptree1_2
-                sta     .hddskiptree + 2
-.patch_jsr_hddrdfile
-                jsr     .hddrdfile
-                lda     #$be ;LDX ,Y
-.patch_sta_hddskiptree2_2
-                sta     .hddskiptree + 2
-                lda     namlo
-.patch_sta_hdddirbuf1
-                sta     pas_hdddirbuf, y
-                lda     namhi
-.patch_sta_hdddirbuf2
-                sta     pas_hdddirbuf + 256, y
-.patch_jsr_hddwritedir
-                jsr     .hddwritedir
-                lda     #0
-.patch_jsr_savebyte
-                jsr     .savebyte
-                ldx     namlo
-                lda     namhi
-                ldy     #cmdwrite
-.patch_jsr_hddseekrdwr
-                jsr     .hddseekrdwr
-.patch_jmp_loopsect2
-                jmp     .loopsect
-
-.hddwriteenc
-.patch_lda_hddencbuf2
-                lda     #>pas_hddencbuf
-                sta     adrhi
-.hddwritedir     ldy     #cmdwrite
-
-.unrcommand1 = .unrelochdd + (* - .patch_jsr_swap_zpg)
-                sty     command
-                nop ;allow replacing "sty command" with "sty pcommand" in extended SmartPort mode
-.patch_jmp_hddwriteimm
-                jmp     .hddwriteimm
+!if is_apa=1 {
+  !if version != 1 {
+    !error "is_apa requires version=1"
+  }
+  !if is_64kb=0 {
+    !error "is_apa requires is_64kb=1"
+  }
+  !if is_readonly=0 {
+    !error "is_apa requires is_readonly=1"
+  }
+  !if disks>1 {
+    !error "is_apa requires disks=1"
+  }
 }
 
-.secttbl         !byte   $00, $0e, $0d, $0c, $0b, $0a, $09, $08, $07, $06, $05, $04, $03, $02, $01, $0f
+!if is_uukrul=1 {
+  !if version != 1 {
+    !error "is_uukrul requires version=1"
+  }
+  !if is_64kb=0 {
+    !error "is_uukrul requires is_64kb=1"
+  }
+  !if is_readonly=1 {
+    !error "is_uukrul requires is_readonly=0"
+  }
+  !if disks!=2 {
+    !error "is_uukrul requires disks=2"
+  }
+}
 
-.seek1           sta     blkidx
-                ldy     #cmdread
-                sty     reqcmd
-!src "src/bootstar/boot.common.5.inc"
-} ;reloc
+!if is_sundog=1 {
+  !if version != 2 {
+    !error "is_sundog requires version=2"
+  }
+  !if is_64kb=0 {
+    !error "is_sundog requires is_64kb=1"
+  }
+  !if is_readonly=1 {
+    !error "is_sundog requires readonly=0"
+  }
+  !if disks>1 {
+    !error "is_sundog requires disks=1"
+  }
+}
 
-;[music] you can't touch this [music]
-;math magic to determine ideal loading address, and information dump
-!ifdef PAS_PASS2 {
-} else { ;PAS_PASS2 not defined
-  !set PAS_PASS2=1
-      !pseudopc ((.hdddataend + $ff) & -256) {
-        pas_hdddirbuf = *
+!if version=1 {
+  !if is_64kb=0 {
+    !if is_128kb=0 {
+      !src "src/bootstar/boot.pascal.11_48kb.a"
+    } else {
+      !src "src/bootstar/boot.pascal.11_128kb.a"
+    }
+  } else {
+    !if is_apa=1 {
+      !src "src/bootstar/boot.pascal.11_64kb_apa.a"
+    } else {
+      !if is_uukrul=1 {
+          !src "src/bootstar/boot.pascal.11_64kb_uukrul.a"
+      } else {
+        !src "src/bootstar/boot.pascal.11_64kb.a"
       }
-          pas_hddencbuf = pas_hdddirbuf ;writes come from cache
-            pas_hddtreebuf = pas_hdddirbuf
-} ;PAS_PASS2
-
-.readbuff
-!byte $D3,$C1,$CE,$A0,$C9,$CE,$C3,$AE
+    }
+  }
+} else {
+  !if version=2 {
+    !if is_64kb=0 {
+      if is_128kb=0 {
+        !src "src/bootstar/boot.pascal.12_48kb.a"
+      } else {
+        !src "src/bootstar/boot.pascal.12_128kb.a"
+      }
+    } else {
+      !if is_sundog=1 {
+        !src "src/bootstar/boot.pascal.12_64kb_sundog.a"
+      } else {
+        !src "src/bootstar/boot.pascal.12_64kb.a"
+      }
+    }
+  } else {
+    !if is_64kb=0 {
+      if is_128kb=0 {
+        !error "no known sample of 1.3 48kb"
+        ;;!src "src/bootstar/boot.pascal.13_48kb.a"
+      } else {
+        !error "no known sample of 1.3 128kb"
+        ;;!src "src/bootstar/boot.pascal.13_128kb.a"
+      }
+    } else {
+      !src "src/bootstar/boot.pascal.13_64kb.a"
+    }
+  }
+}

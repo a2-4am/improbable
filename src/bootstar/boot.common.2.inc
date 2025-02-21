@@ -320,7 +320,7 @@
                 sta     .unrppacket + 1
 
 .bankram
-!if needs_reloc=1 {
+!if is_sundog=1 {
                 ldx     #>(.hddcodeend + $ff - .patch_jsr_swap_zpg)
                 ldy     #0
 .multicopy
@@ -333,8 +333,20 @@
                 dex
                 bne     .multicopy
 }
+!if disks>2 {
+                lda     #disks
+.find_vols
+                pha
+}
                 jsr     .hddopendir
-!if disks=2 {
+!if disks>1 {
                 inc     filename_e - 1
+  !if disks=2 {
                 jsr     .hddopendir
-} ; elif { ; loop instead }
+  } else {
+                pla
+                sec
+                sbc     #1
+                bne     .find_vols
+  }
+}

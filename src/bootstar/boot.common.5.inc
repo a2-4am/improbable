@@ -11,8 +11,6 @@
                 ldy     #0
                 sty     sparseblk
 }
-                ldy     treeidx
-
                 ;fetch tree data block and read it
 
                 ldx     treeblklo
@@ -110,12 +108,6 @@
                 !byte   0
 .paddr           !word   .readbuff + $200
 .pblock          !byte   2, 0, 0
-  !if >.paddr != >.pblock {
-    !warn "uncomment ';;lda     #>pblock'"
-  }
-  !if >.pblock != >(.pblock + 1) {
-    !warn "uncomment ';;lda     #>(pblock + 1)'"
-  }
 
 .hddcodeend
 !if disks>1 {

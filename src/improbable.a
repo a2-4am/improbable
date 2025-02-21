@@ -11,9 +11,14 @@
          !src "src/constants.a"
          !src "src/macros.a"
 
-needs_reloc=0
-read_only=0
-disks=2
+version=3 ;1, 2, or 3
+is_64kb=1
+is_128kb=0
+read_only=1
+disks=1
+is_apa=0                             ; Apple Presents Apple is a v1.1 64kb variant with reversed LC bank accesses
+is_uukrul=0                          ; The Dark Heart of Uukrul is a v1.1 64kb variant that bypasses the startup file
+is_sundog=0 ;;--support next update-- ;;                          ; SunDog is a v1.2 64kb variant that has custom startup code
 filename +PSTRING "SIDE.A"           ; if disks>1, last character will be incremented for each disk
 filename_e
 
