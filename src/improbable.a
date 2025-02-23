@@ -25,6 +25,7 @@
          +REQUIRE_BOOL is_64kb,      "is_64kb"
          +REQUIRE_BOOL is_128kb,     "is_128kb"
          +REQUIRE_BOOL read_only,    "read_only"
+         +REQUIRE_BOOL backup_prodos,"backup_prodos"
          ; Apple Presents Apple is a v1.1 64kb variant with reversed LC bank accesses
          +REQUIRE_BOOL is_apa,       "is_apa"
          ; The Dark Heart of Uukrul is a v1.1 64kb variant that bypasses the startup file
@@ -38,6 +39,7 @@
 filename +PSTRING "SIDE.A"           ; if disks>1, last character will be incremented for each disk
 filename_e
 
+!if backup_prodos=1 {
 onResetMove
 !pseudopc OnReset {
          sta   RWAUXZPSTACK          ; runs from $0110/main
@@ -129,13 +131,19 @@ backupfc00=*+1
          +READ_RAM1_WRITE_RAM1
          jsr   CopyLC10
          cli
+} ; backup_prodos
 Quit
          jsr   PRODOS_MLI
          !byte CMD_QUIT
+!if backup_prodos=1 {
          !word byte_4
+} else {
+         !word +
++        !byte 4
+} ; backup_prodos=0
+                                     !if (* > $20FF) { !serious "ReenterCold routine is too large" }
 
-!if (* > $20FF) { !serious "ReenterCold routine is too large" }
-
+!if backup_prodos=1 {
 ;------------------------------------------------------------------------------
 ; BackupMemory
 ; Copies both language card banks and selected contents of
@@ -178,19 +186,22 @@ BackupMemory
          iny
          sty   $03F3                 ; set reset vector to bootstrap routine in main stack
          jmp   ROM_FINALIZE_RESET
+} ; backup_prodos=1
 
 Start
          inc   $03F4                 ; reboot on reset unless we set up a better reset later
          lda   PRODOS_MACHID         ; requires 64K, supports 128K
+!if backup_prodos=1 {
          and   #%00110000
          cmp   #%00110000            ; 128K?
 byte_4=*+1
-!if (* > $20FF) { !serious "code is too large for byte_4 hack" }
+                                     !if (* > $20FF) { !serious "code is too large for byte_4 hack" }
          bne   no128k
          jsr   BackupMemory          ; copy ProDOS and some application code to auxmem for later
          !byte $AD
 no128k
-!if (*-byte_4-1 <> 4) { !serious "byte_4 is not 4" }
+                                     ;!if (*-byte_4-1 <> 4) { !serious "byte_4 is not 4" }
+} ; backup_prodos=1
          and   #%00100000            ; 64K?
          beq   Quit                  ; can't continue without at least 64K
 

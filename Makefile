@@ -15,7 +15,13 @@ is_128kb=0
 # boolean, 0 or 1 (normally 1, use 0 if you need write support)
 read_only=1
 
+# boolean, 0 or 1 (normally 1, use 0 if you know in advance that game clobbers auxmem)
+backup_prodos=1
+
 # integer, 1+ (number of disks)
+# multi-disk games will only work OOTB if they support 2 drives
+# otherwise the disk images will need to be patched to support 'swapping' disks
+# see Angelsoft adventures for examples of magic swapping
 disks=1
 
 # boolean, 0 or 1 (normally 0, use 1 for Pascal v1.1 variant used by Apple Presents Apple)
@@ -52,6 +58,7 @@ $(EXE): $(SOURCES) | $(BUILDDIR)
 		-Dis_64kb=$(is_64kb) \
 		-Dis_128kb=$(is_128kb) \
 		-Dread_only=$(read_only) \
+		-Dbackup_prodos=$(backup_prodos) \
 		-Ddisks=$(disks) \
 		-Dis_apa=$(is_apa) \
 		-Dis_uukrul=$(is_uukrul) \
