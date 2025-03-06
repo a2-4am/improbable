@@ -130,7 +130,7 @@ hook_wipe       jsr      .callback
 .patch_sta_curvolidx
                 sta      .curvolidx + 1
                 bit      $c08b
-                jmp      $d27B
+                jmp      $d293
 }
 .magic_e
 
