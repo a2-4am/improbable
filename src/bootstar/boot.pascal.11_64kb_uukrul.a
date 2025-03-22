@@ -108,7 +108,11 @@ hook_wipe       jsr      .callback
 
 .callback        lda     #$f2
                 sta     $BD
+!if backup_prodos=1 {
+                ldy     #$1e + $25 + 3 ;3 = preserve size
+} else {
                 ldy     #$1e + 3 ;3 = preserve size
+}
                 txa
                 beq     .skippage
                 cpx     #3
