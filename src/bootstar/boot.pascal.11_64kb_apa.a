@@ -72,21 +72,31 @@
                 iny
                 bne     -
 
-.patch_slot     lda     #$60
-                sta     $d681
-                sta     $d682
-
 .banklc1         lda     $C083 ;varies by version
                 ldx     #2
--               lda     hook_wipe, x
+-               lda     .hook_wipe, x
                 sta     $d6ad, x
                 dex
                 bpl     -
+
+                ldx     #(.hidedrive_e-.hidedrive)-1
+-               lda     .hidedrive, x
+                sta     $d72c, x ;varies by version
+                dex
+                bpl     -
+
                 txs
 
 .jmpindirect     jmp     ($fff8) ;varies by version
 
-hook_wipe       jsr      .callback
+.hook_wipe      jsr      .callback
+
+.hidedrive      asl
+                sta     $BF2C
+                sta     $BF2E
+                ldy     #2
+                sty     $BF2D
+.hidedrive_e
 
 .callback        lda     #$f2
                 sta     $BD

@@ -80,13 +80,15 @@
                 iny
                 bne     -
 
-.patch_slot     lda     #$60
-                sta     $d681
-                sta     $d682
-
                 ldx     #2
--               lda     hook_wipe, x
+-               lda     .hook_wipe, x
                 sta     $d6ad, x
+                dex
+                bpl     -
+
+                ldx     #(.hidedrive_e-.hidedrive)-1
+-               lda     .hidedrive, x
+                sta     $d72c, x ;varies by version
                 dex
                 bpl     -
 
@@ -94,7 +96,7 @@
 
 .jmpindirect     jmp     ($fff8) ;varies by version
 
-hook_wipe       jsr      .callback
+.hook_wipe      jsr      .callback
 
 .magic_b
                 iny
@@ -105,6 +107,13 @@ hook_wipe       jsr      .callback
                 bit      $c08b
                 jmp      $d23B
 .magic_e
+
+.hidedrive      asl
+                sta     $BF2C
+                sta     $BF2E
+                ldy     #2
+                sty     $BF2D
+.hidedrive_e
 
 .callback        lda     #$f2
                 sta     $BD
@@ -311,6 +320,12 @@ hook_wipe       jsr      .callback
 .patch_lda_blokhiarray
                 lda     .blokhiarray, x
                 sta     treeblkhi
+
+                lda     #9
+                sta     $3AD ;error (drive not ready)
+                lda     $3a2
+                cmp     #2
+                bcs     .swap_zpgi
 
 .loopsect
                 lda     #0

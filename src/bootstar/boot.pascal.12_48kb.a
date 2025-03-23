@@ -13,6 +13,7 @@
                 stx     $3A4 ;track
                 stx     $3A8 ;adrlo
                 inx
+                stx     $3A2 ;drive
                 stx     $3AC ;read
 
                 lda     #4
@@ -96,20 +97,30 @@
                 iny
                 bne     -
 
-.patch_slot     lda     #$60
-                sta     $b781
-                sta     $b782
-
                 ldx     #2
--               lda     hook_wipe, x
+-               lda     .hook_wipe, x
                 sta     $927a, x
                 dex
                 bpl     -
+
+                ldx     #(.hidedrive_e-.hidedrive)-1
+-               lda     .hidedrive, x
+                sta     $930c, x ;varies by version
+                dex
+                bpl     -
+
                 txs
 
 .jmpindirect     jmp     ($befe) ;varies by version
 
-hook_wipe       jsr      .callback
+.hook_wipe      jsr      .callback
+
+.hidedrive      asl
+                sta     $BF2C
+                sta     $BF2E
+                ldy     #2
+                sty     $BF2D
+.hidedrive_e
 
 .magic_b
 !if disks>1 {
@@ -357,6 +368,12 @@ hook_wipe       jsr      .callback
                 lda     .blokhiarray, x
                 sta     treeblkhi
 }
+
+                lda     #9
+                sta     $3AD ;error (drive not ready)
+                lda     $3a2
+                cmp     #2
+                bcs     .swap_zpgi
 
 .loopsect
                 lda     #0
