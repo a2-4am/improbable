@@ -128,7 +128,7 @@
                 bpl     -
                 ldx     #(.hidedrive_e-.hidedrive)-1
 -               lda     .hidedrive, x
-                sta     $f7b4, x ;varies by version
+                sta     $f7b6, x ;varies by version
                 dex
                 bpl     -
 
