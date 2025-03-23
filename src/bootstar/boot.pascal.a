@@ -19,8 +19,8 @@
   !if is_64kb=0 {
     !error "is_apa requires is_64kb=1"
   }
-  !if is_readonly=0 {
-    !error "is_apa requires is_readonly=1"
+  !if read_only=0 {
+    !error "is_apa requires read_only=1"
   }
   !if disks>1 {
     !error "is_apa requires disks=1"
@@ -34,8 +34,8 @@
   !if is_64kb=0 {
     !error "is_uukrul requires is_64kb=1"
   }
-  !if is_readonly=1 {
-    !error "is_uukrul requires is_readonly=0"
+  !if read_only=1 {
+    !error "is_uukrul requires read_only=0"
   }
   !if disks!=2 {
     !error "is_uukrul requires disks=2"
@@ -49,8 +49,8 @@
   !if is_64kb=0 {
     !error "is_sundog requires is_64kb=1"
   }
-  !if is_readonly=1 {
-    !error "is_sundog requires readonly=0"
+  !if read_only=1 {
+    !error "is_sundog requires read_only=0"
   }
   !if disks>1 {
     !error "is_sundog requires disks=1"
@@ -92,7 +92,7 @@
     }
   } else {
     !if is_64kb=0 {
-      if is_128kb=0 {
+      !if is_128kb=0 {
         !error "no known sample of 1.3 48kb"
         ;;!src "src/bootstar/boot.pascal.13_48kb.a"
       } else {
