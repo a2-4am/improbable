@@ -24,6 +24,9 @@ backup_prodos=1
 # see Angelsoft adventures for examples of magic swapping
 disks=1
 
+# boolean, 0 or 1 (normally 0, use 1 for Pascal v1.2 variant used by Reading Workshop)
+is_reading=0
+
 # boolean, 0 or 1 (normally 0, use 1 for Pascal v1.1 variant used by Apple Presents Apple)
 is_apa=0
 
@@ -44,13 +47,14 @@ CADIUS=cadius
 BUILDDIR=build
 SOURCES=$(wildcard src/*.a)
 EXE=$(BUILDDIR)/IMPROB.SYSTEM\#FF2000
+PRODOS=common/PRODOS\#FF0000
 DATA=$(wildcard res/*)
 DISKVOLUME=NEW.DISK
 BUILDDISK=$(BUILDDIR)/$(DISKVOLUME).po
 
 .PHONY: clean mount all
 
-$(BUILDDISK): $(DATA) $(EXE)
+$(BUILDDISK): $(PRODOS) $(DATA) $(EXE)
 
 $(EXE): $(SOURCES) | $(BUILDDIR)
 	$(ACME) -r build/improbable.lst \
@@ -60,11 +64,16 @@ $(EXE): $(SOURCES) | $(BUILDDIR)
 		-Dread_only=$(read_only) \
 		-Dbackup_prodos=$(backup_prodos) \
 		-Ddisks=$(disks) \
+		-Dis_reading=$(is_reading) \
 		-Dis_apa=$(is_apa) \
 		-Dis_uukrul=$(is_uukrul) \
 		-Dis_sundog=$(is_sundog) \
 		src/improbable.a
 	$(CADIUS) REPLACEFILE "$(BUILDDISK)" "/$(DISKVOLUME)/" "$(EXE)" -C
+	@touch "$@"
+
+$(PRODOS): $(BUILDDIR)
+	$(CADIUS) REPLACEFILE "$(BUILDDISK)" "/$(DISKVOLUME)/" "$@" -C
 	@touch "$@"
 
 $(DATA): $(BUILDDIR)

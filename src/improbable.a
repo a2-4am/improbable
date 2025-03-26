@@ -25,6 +25,8 @@
          +REQUIRE_BOOL is_128kb,     "is_128kb"
          +REQUIRE_BOOL read_only,    "read_only"
          +REQUIRE_BOOL backup_prodos,"backup_prodos"
+         ;Mindscape Reading Workshop stores keypresses in a variable prior to disk-swap
+         +REQUIRE_BOOL is_reading,   "is_reading"
          ; Apple Presents Apple is a v1.1 64kb variant with reversed LC bank accesses
          +REQUIRE_BOOL is_apa,       "is_apa"
          ; The Dark Heart of Uukrul is a v1.1 64kb variant that bypasses the startup file
@@ -32,8 +34,6 @@
          ;;--support next update--
          ; SunDog is a v1.2 64kb variant that has custom startup code
          +REQUIRE_BOOL is_sundog,    "is_sundog"
-         ;Mindscape Reading Workshop stores keypresses in a variable prior to disk-swap
-         +REQUIRE_BOOL is_reading,   "is_reading"
 
          !src "src/constants.a"
 
