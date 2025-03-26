@@ -6,7 +6,6 @@
 !to "build/IMPROB.SYSTEM#FF2000",plain
 *=$2000
 
-         !src "src/constants.a"
          !src "src/macros.a"
 
 !ifndef version {
@@ -33,6 +32,10 @@
          ;;--support next update--
          ; SunDog is a v1.2 64kb variant that has custom startup code
          +REQUIRE_BOOL is_sundog,    "is_sundog"
+         ;Mindscape Reading Workshop stores keypresses in a variable prior to disk-swap
+         +REQUIRE_BOOL is_reading,   "is_reading"
+
+         !src "src/constants.a"
 
          jmp   Start
 
