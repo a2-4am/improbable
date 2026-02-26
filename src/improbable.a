@@ -1,5 +1,5 @@
 ;license:MIT
-;(c) 2025 by 4am
+;(c) 2025-2026 by 4am
 ;
 !cpu 6502
 !ct "src/lcase.ct"
@@ -11,8 +11,8 @@
 !ifndef version {
          !serious "version is not defined"
 }
-!if version<>1 and version<>2 and version<>3 {
-         !serious "version must be 1, 2, or 3"
+!if version<>0 and version<>1 and version<>2 and version<>3 {
+         !serious "version must be 0, 1, 2, or 3"
 }
 !ifndef disks {
          !serious "disks is not defined"
